@@ -17,8 +17,8 @@
 <sup>1</sup> Stanford University &nbsp;&nbsp;
 <sup>2</sup> Carnegie Mellon University &nbsp;&nbsp;
 <sup>3</sup> University of California, San Diego &nbsp;&nbsp;
-<sup>4</sup> School of AI, Shanghai Jiao Tong University  
 <br>
+<sup>4</sup> School of AI, Shanghai Jiao Tong University  
 <sup>5</sup> Tsinghua University &nbsp;&nbsp;
 <sup>6</sup> Google DeepMind &nbsp;&nbsp;
 <sup>7</sup> Harvard University
