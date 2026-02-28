@@ -62,6 +62,32 @@ class EmptyEnv(InteractiveMiniGridEnv):
 
         return self.place_obj(obj)
 
+
+class NoiseEmptyEnv(EmptyEnv):
+    """Empty interact env with random noise floors that change color each step with probability 0.25."""
+    def __init__(self, num_noise=None, *args, **kwargs):
+        self.num_noise = num_noise
+        self.noise_floors = []
+        super().__init__(*args, **kwargs)
+
+    def _gen_grid(self, width, height):
+        super()._gen_grid(width, height)
+        self.noise_floors = []
+        num_noise = self.num_noise if self.num_noise is not None else self.np_random.randint(1, 5)
+        for _ in range(num_noise):
+            color = self.np_random.choice(COLOR_NOISE)
+            floor = NoiseFloor(color=color)
+            self.place_obj(floor)
+            self.noise_floors.append(floor)
+
+    def step(self, action):
+        for floor in self.noise_floors:
+            if self.np_random.rand() < 0.25:
+                floor.color = self.np_random.choice(COLOR_NOISE)
+        obs, reward, done, info = super().step(action)
+        return obs, reward, done, info
+
+
 class EmptyInteractEnv6x6_2_object(EmptyEnv):
     def __init__(self):
         super().__init__(size=6, agent_start_pos=None)
@@ -149,6 +175,71 @@ register(
     id='MiniGrid-Empty-Interact-6x6-o6-v0',
     entry_point='gym_minigrid.envs:EmptyInteractEnv6x6_6_object'
 )
+
+
+class EmptyInteractEnv6x6_6_object_1_noise(NoiseEmptyEnv):
+    def __init__(self):
+        super().__init__(num_noise=1, size=6, agent_start_pos=None)
+
+    def _gen_grid(self, width, height):
+        super()._gen_grid(width, height)
+        for _ in range(6):
+            self.add_object()
+
+
+register(
+    id='MiniGrid-Empty-Interact-6x6-o6-1-noise-v0',
+    entry_point='gym_minigrid.envs:EmptyInteractEnv6x6_6_object_1_noise'
+)
+
+
+class EmptyInteractEnv6x6_6_object_2_noise(NoiseEmptyEnv):
+    def __init__(self):
+        super().__init__(num_noise=2, size=6, agent_start_pos=None)
+
+    def _gen_grid(self, width, height):
+        super()._gen_grid(width, height)
+        for _ in range(6):
+            self.add_object()
+
+
+register(
+    id='MiniGrid-Empty-Interact-6x6-o6-2-noise-v0',
+    entry_point='gym_minigrid.envs:EmptyInteractEnv6x6_6_object_2_noise'
+)
+
+
+class EmptyInteractEnv6x6_6_object_3_noise(NoiseEmptyEnv):
+    def __init__(self):
+        super().__init__(num_noise=3, size=6, agent_start_pos=None)
+
+    def _gen_grid(self, width, height):
+        super()._gen_grid(width, height)
+        for _ in range(6):
+            self.add_object()
+
+
+register(
+    id='MiniGrid-Empty-Interact-6x6-o6-3-noise-v0',
+    entry_point='gym_minigrid.envs:EmptyInteractEnv6x6_6_object_3_noise'
+)
+
+
+class EmptyInteractEnv6x6_6_object_4_noise(NoiseEmptyEnv):
+    def __init__(self):
+        super().__init__(num_noise=4, size=6, agent_start_pos=None)
+
+    def _gen_grid(self, width, height):
+        super()._gen_grid(width, height)
+        for _ in range(6):
+            self.add_object()
+
+
+register(
+    id='MiniGrid-Empty-Interact-6x6-o6-4-noise-v0',
+    entry_point='gym_minigrid.envs:EmptyInteractEnv6x6_6_object_4_noise'
+)
+
 
 class EmptyInteractEnv6x6_8_object(EmptyEnv):
     def __init__(self):

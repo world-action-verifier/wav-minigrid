@@ -3,6 +3,7 @@ from gym_minigrid.minigrid import MiniGridEnv, WorldObj, COLORS, fill_coords, po
 
 # COLOR_CYCLE = ['red', 'green', 'blue', 'purple', 'yellow', 'grey']
 COLOR_CYCLE = ['red', 'blue']
+COLOR_NOISE = ['red', 'green', 'blue', 'purple', 'yellow', 'grey']
 
 class IKey(WorldObj):
     def __init__(self, color='blue'):
@@ -97,6 +98,24 @@ class IBox(WorldObj):
     #     else:
     #         self.color = COLOR_CYCLE[0]
     #     return True
+
+
+class NoiseFloor(WorldObj):
+    """Background noise object: agent can overlap, not pickup-able, renders as colored tile."""
+    def __init__(self, color='blue'):
+        # Use 'floor' type so MiniGrid encoding does not raise
+        super().__init__('floor', color)
+
+    def can_overlap(self):
+        return True
+
+    def can_pickup(self):
+        return False
+
+    def render(self, img):
+        c = COLORS[self.color]
+        fill_coords(img, point_in_rect(0.031, 1, 0.031, 1), c)
+
 
 class InteractiveMiniGridEnv(MiniGridEnv):
     """
