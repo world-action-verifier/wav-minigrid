@@ -1,5 +1,5 @@
 <div align="center">
-<h2><center>👉 Self-Improving World Models via Asymmetric Forward-Inverse Consistency </h2>
+<h2><center>👉 World Action Verifier: Self-Improving World Models via Asymmetric Forward-Inverse Consistency </h2>
 
 [Yuejiang Liu](https://sites.google.com/view/yuejiangliu)<sup>1</sup>, 
 [Lingjing Kong](https://scholar.google.com/citations?hl=en&view_op=search_authors&mauthors=Lingjing+Kong+Carnegie+Mellon)<sup>2</sup>, 
@@ -29,16 +29,16 @@
 
 </div>
 
-This repository contains the official PyTorch implementation of [**ASIM**](https://sites.google.com/view/ctrl-world).
+This repository contains the official PyTorch implementation of [**WAV**](https://sites.google.com/view/ctrl-world).
 
 This codebase focuses on the controlled setting experiments in MiniGrid, 
 which are designed to provide mechanistic insights and validate the core 
-ideas behind ASIM under well-controlled environments.
+ideas behind WAV under well-controlled environments.
 
-**TL;DR:** ASIM improves world models by turning hard prediction into easier verification via forward–inverse consistency, achieving better performance with half the data.
+**TL;DR:** WAV improves world models by turning hard prediction into easier verification via forward–inverse consistency, achieving better performance with half the data.
 
 <p>
-    <img src="assets/teaser.png" alt="ASIM framework" width="100%" />
+    <img src="assets/teaser.png" alt="WAV framework" width="100%" />
 </p>
 
 ## 📋 Content
@@ -48,6 +48,7 @@ This repository contains the code for evaluating:
 * Robustness under distribution shift
 * Sample efficiency comparison
 * Robustness under increasing state complexity
+* Robustness under environmental noise
 * Active acquisition strategy comparison
 
 ## 🛠️ Installation 
@@ -56,12 +57,12 @@ We recommend using a clean conda environment.
 
 ```bash
 # create environment
-conda create -n asim_minigrid python=3.7
-conda activate asim_minigrid
+conda create -n wav_minigrid python=3.7
+conda activate wav_minigrid
 
 # clone repository
-git clone https://github.com/Weifeng2829/ASIM-MiniGrid.git
-cd ASIM-MiniGrid
+git clone https://github.com/Weifeng2829/WAV-MiniGrid.git
+cd WAV-MiniGrid
 
 # install dependencies
 pip install -r requirements.txt
@@ -69,30 +70,48 @@ pip install -e .
 ```
 ## 🎮 MiniGrid Tasks 
 
-We evaluate ASIM on three complex tasks in MiniGrid designed to test long-horizon dependencies and compositional logic. Each task requires precise manipulation of objects (Key, Ball, Box) based on their color attributes.
+We evaluate WAV on three complex tasks in MiniGrid designed to test long-horizon dependencies and compositional logic. Each task requires precise manipulation of objects (Key, Ball, Box) based on their color attributes.
 
 * **Key Delivery**: A multi-stage manipulation task: Match Key color to Box → Insert Key into Box → Swap Box with Ball → Match Ball color to Box → Reach Goal.
 * **Ball Delivery**: A structural mirror of Key Delivery: Place the Ball into the Box first, then manipulate the Key according to color constraints before reaching the goal.
 * **Object Matching**: A coordination challenge: Synchronize both Key and Ball colors with a reference Box, then arrange all objects together before exiting.
 
+---
+
+### 🧪 Controlled Environment: Random Play in EmptyEnv
+
+To enable controlled mechanistic analysis, we introduce a **random play setting in an EmptyEnv**.  
+In this environment, the agent interacts with:
+
+- A variable number of **objects** (Key, Ball, Box)
+- A configurable number of **noisy floor tiles**, whose colors **randomly change at every step**
+
+By systematically varying the number of objects and noisy tiles, we can precisely control **state complexity** and **environmental stochasticity**, providing a clean testbed for studying robustness, generalization, and exploration behavior of world models.
+
+---
 
 <p align="center">
   <table>
     <tr>
       <td align="center">
-        <img src="assets/key_delivery.gif" alt="Key Delivery" width="90%" />
+        <img src="assets/key_delivery.gif" width="90%" />
         <br>
         <b>(a) Key Delivery</b>
       </td>
       <td align="center">
-        <img src="assets/ball_delivery.gif" alt="Ball Delivery" width="90%" />
+        <img src="assets/ball_delivery.gif" width="90%" />
         <br>
         <b>(b) Ball Delivery</b>
       </td>
       <td align="center">
-        <img src="assets/object_matching.gif" alt="Object Matching" width="90%" />
+        <img src="assets/object_matching.gif" width="90%" />
         <br>
         <b>(c) Object Matching</b>
+      </td>
+      <td align="center">
+        <img src="assets/noise_emptyenv.gif" width="90%" />
+        <br>
+        <b>(d) Random Play (EmptyEnv)</b>
       </td>
     </tr>
   </table>
@@ -155,7 +174,22 @@ python exps/state_complexity_gap.py
 
 ---
 
-### 4. Active Learning Strategy Comparison
+### 4. Robustness under Increasing State Complexity
+
+Evaluate model robustness under increasing levels of observation noise.
+
+```bash
+python exps/noise_robustness.py
+```
+
+**This experiment evaluates:**
+
+* Robustness to stochastic perturbations in the environment
+* Performance degradation under increasing noise levels
+
+---
+
+### 5. Active Learning Strategy Comparison
 
 Compare acquisition strategies for improving world model performance.
 
@@ -172,22 +206,23 @@ python exps/wm_active_learning.py
 
 ### Expected Results
 
-Running the experiments should yield results consistent with the figures below, demonstrating ASIM's superior performance across metrics:
+Running the experiments should yield results consistent with the figures below, demonstrating WAV's superior performance across metrics:
 
 <p>
-    <img src="assets/minigrid_results.png" alt="MiniGrid Experimental Results" width="100%" />
+    <img src="assets/minigrid_all_results.png" alt="MiniGrid Experimental Results" width="100%" />
 </p>
 
 Key Findings:
 * **Robustness**: Sparse IDM maintains better generalization under distribution shifts compared to vanilla IDM
 * **Sample Efficiency**: Sparse IDM achieves comparable or better performance with significantly less training data than forward world models
-* **Scalability**: Models demonstrate robust performance as state complexity increases
-* **Active Learning**: ASIM's acquisition strategy leads to more efficient data utilization
+* **Complexity Scaling**: Sparse IDM demonstrate stable performance as environment complexity increases
+* **Noise Robustness**: Sparse IDM remains robust under increasing environmental noise
+* **Active Learning**: WAV's acquisition strategy leads to more efficient data utilization
 
 ## 📂 Project Structure
 
 ```
-ASIM-MiniGrid/
+WAV-MiniGrid/
 ├── README.md
 ├── assets
 ├── checkpoints
@@ -203,7 +238,7 @@ ASIM-MiniGrid/
 ├── requirements.txt
 ├── setup.py
 └── src
-    ├── asim_minigrid
+    ├── wav_minigrid
     │   ├── models
 ```
 

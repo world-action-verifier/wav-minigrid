@@ -8,8 +8,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 from tqdm import tqdm
 from torch.utils.data import DataLoader, Subset
-from asim_minigrid.evaluate_generation import MiniGridPhysicsOracle
-from asim_minigrid.models import SparseIDM
+from wav_minigrid.evaluate_generation import MiniGridPhysicsOracle
+from wav_minigrid.models import SparseIDM
 
 
 def set_all_seeds(seed: int) -> None:

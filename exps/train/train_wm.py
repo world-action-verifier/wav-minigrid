@@ -13,10 +13,10 @@ import argparse
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 sys.path.insert(0, project_root)
 
-from asim_minigrid.models import WorldModel
-from asim_minigrid.dataset import MiniGridDynamicsDataset, NormalizedDataset
-from asim_minigrid.utils import freeze_model_for_active_learning
-from asim_minigrid.al_utils import (
+from wav_minigrid.models import WorldModel
+from wav_minigrid.dataset import MiniGridDynamicsDataset, NormalizedDataset
+from wav_minigrid.utils import freeze_model_for_active_learning
+from wav_minigrid.al_utils import (
     train_one_round,
     evaluate,
 )

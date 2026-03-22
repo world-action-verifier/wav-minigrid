@@ -10,17 +10,17 @@ import os
 import argparse
 import json
 
-from asim_minigrid.models import WorldModel, SparseIDM, DenseIDM
-from asim_minigrid.dataset import MiniGridDynamicsDataset, NormalizedDataset
-from asim_minigrid.evaluate_generation import MiniGridPhysicsOracle
-from asim_minigrid.utils import (
+from wav_minigrid.models import WorldModel, SparseIDM, DenseIDM
+from wav_minigrid.dataset import MiniGridDynamicsDataset, NormalizedDataset
+from wav_minigrid.evaluate_generation import MiniGridPhysicsOracle
+from wav_minigrid.utils import (
     train_world_model,
     train_inverse_model,
     test_world_model,
     test_inverse_model,
     set_all_seeds
 )
-from asim_minigrid.config import NOISE_ROBUSTNESS, DEVICE
+from wav_minigrid.config import NOISE_ROBUSTNESS, DEVICE
 
 NOISE_EXPERIMENTS = NOISE_ROBUSTNESS["EXPERIMENTS"]
 SAVE_MODEL = NOISE_ROBUSTNESS["SAVE_MODEL"]

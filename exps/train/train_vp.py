@@ -11,7 +11,7 @@ import wandb
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
-from asim_minigrid.models.wm import WorldModel
+from wav_minigrid.models.wm import WorldModel
 from train_utils import (
     compute_loss_vp, 
     evaluate, 

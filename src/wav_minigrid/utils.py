@@ -9,7 +9,7 @@ import numpy as np
 import random
 from tqdm import tqdm
 
-from asim_minigrid.models import SparseIDM
+from wav_minigrid.models import SparseIDM
 
 def train_world_model(
     model, 

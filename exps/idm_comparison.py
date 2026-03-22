@@ -8,9 +8,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
-from asim_minigrid.models import DenseIDM, SparseIDM
-from asim_minigrid.dataset import NormalizedDataset, MiniGridDynamicsDataset
-from asim_minigrid.config import IDM_COMPARISON, DEVICE
+from wav_minigrid.models import DenseIDM, SparseIDM
+from wav_minigrid.dataset import NormalizedDataset, MiniGridDynamicsDataset
+from wav_minigrid.config import IDM_COMPARISON, DEVICE
 
 # Configuration
 TRAIN_DATA_PATH = IDM_COMPARISON["TRAIN_DATA_PATH"]

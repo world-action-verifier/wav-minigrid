@@ -14,11 +14,11 @@ from torch.utils.data import DataLoader
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, project_root)
 
-from asim_minigrid.dataset import MiniGridDynamicsDataset
-from asim_minigrid.models import WorldModel, SparseIDM, DenseIDM
-from asim_minigrid.evaluate_generation import MiniGridPhysicsOracle
-from asim_minigrid.utils import test_world_model, test_inverse_model
-from asim_minigrid.config import STATE_COMPLEXITY_GAP, DEVICE
+from wav_minigrid.dataset import MiniGridDynamicsDataset
+from wav_minigrid.models import WorldModel, SparseIDM, DenseIDM
+from wav_minigrid.evaluate_generation import MiniGridPhysicsOracle
+from wav_minigrid.utils import test_world_model, test_inverse_model
+from wav_minigrid.config import STATE_COMPLEXITY_GAP, DEVICE
 
 # Configuration
 DEFAULT_TEST_SETS = STATE_COMPLEXITY_GAP["DEFAULT_TEST_SETS"]
