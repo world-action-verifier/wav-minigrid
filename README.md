@@ -70,26 +70,6 @@ pip install -e .
 ```
 ## 🎮 MiniGrid Tasks 
 
-We evaluate WAV on three complex tasks in MiniGrid designed to test long-horizon dependencies and compositional logic. Each task requires precise manipulation of objects (Key, Ball, Box) based on their color attributes.
-
-* **Key Delivery**: A multi-stage manipulation task: Match Key color to Box → Insert Key into Box → Swap Box with Ball → Match Ball color to Box → Reach Goal.
-* **Ball Delivery**: A structural mirror of Key Delivery: Place the Ball into the Box first, then manipulate the Key according to color constraints before reaching the goal.
-* **Object Matching**: A coordination challenge: Synchronize both Key and Ball colors with a reference Box, then arrange all objects together before exiting.
-
----
-
-### 🧪 Controlled Environment: Random Play in EmptyEnv
-
-To enable controlled mechanistic analysis, we introduce a **random play setting in an EmptyEnv**.  
-In this environment, the agent interacts with:
-
-- A variable number of **objects** (Key, Ball, Box)
-- A configurable number of **noisy floor tiles**, whose colors **randomly change at every step**
-
-By systematically varying the number of objects and noisy tiles, we can precisely control **state complexity** and **environmental stochasticity**, providing a clean testbed for studying robustness, generalization, and exploration behavior of world models.
-
----
-
 <p align="center">
   <table>
     <tr>
@@ -111,11 +91,31 @@ By systematically varying the number of objects and noisy tiles, we can precisel
       <td align="center">
         <img src="assets/noise_emptyenv.gif" width="90%" />
         <br>
-        <b>(d) Random Play (EmptyEnv)</b>
+        <b>(d) Random Play</b>
       </td>
     </tr>
   </table>
 </p>
+
+We evaluate WAV on three complex tasks in MiniGrid designed to test long-horizon dependencies and compositional logic. Each task requires precise manipulation of objects (Key, Ball, Box) based on their color attributes.
+
+* **Key Delivery**: A multi-stage manipulation task: Match Key color to Box → Insert Key into Box → Swap Box with Ball → Match Ball color to Box → Reach Goal.
+* **Ball Delivery**: A structural mirror of Key Delivery: Place the Ball into the Box first, then manipulate the Key according to color constraints before reaching the goal.
+* **Object Matching**: A coordination challenge: Synchronize both Key and Ball colors with a reference Box, then arrange all objects together before exiting.
+
+---
+
+### 🧪 Controlled Environment: Random Play in EmptyEnv
+
+To enable controlled mechanistic analysis, we introduce a **random play setting in an EmptyEnv**.  
+In this environment, the agent interacts with:
+
+- A variable number of **objects** (Key, Ball, Box)
+- A configurable number of **noisy floor tiles**, whose colors **randomly change at every step**
+
+By systematically varying the number of objects and noisy tiles, we can precisely control **state complexity** and **environmental stochasticity**, providing a clean testbed for studying robustness, generalization, and exploration behavior of world models.
+
+---
 
 ## 📷 CheckPoints and Datasets 
 
