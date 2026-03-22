@@ -233,6 +233,7 @@ WAV-MiniGrid/
 │   ├── data_efficiency_gap.py
 │   ├── idm_comparison.py
 │   ├── state_complexity_gap.py
+│   ├── noise_robustness.py
 │   ├── wm_active_learning.py
 │   ├── train
 ├── requirements.txt
