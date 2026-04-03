@@ -17,6 +17,7 @@ from wav_minigrid.al_utils import (
     query_strategy,
     compute_uncertainty_via_mcdropout,
     select_and_collect_consistency_data,
+    ema_gamma_progress_update_old,
     evaluate,
     train_one_round,
 )
@@ -46,7 +47,14 @@ USE_BASE_DATA = WM_ACTIVE_LEARNING["USE_BASE_DATA"]
 USE_RANDOM_BASE_MODEL = WM_ACTIVE_LEARNING["USE_RANDOM_BASE_MODEL"]
 TRAIN_FROM_SCRATCH = WM_ACTIVE_LEARNING["TRAIN_FROM_SCRATCH"]
 SEED = WM_ACTIVE_LEARNING["SEED"]
-
+PROGRESS_GAMMA = WM_ACTIVE_LEARNING.get("PROGRESS_GAMMA", 0.9)
+ORACLE_RANDOM_MIX_RATIO = WM_ACTIVE_LEARNING.get("ORACLE_RANDOM_MIX_RATIO", 0.0)
+UNCERTAINTY_RANDOM_MIX_RATIO = WM_ACTIVE_LEARNING.get("UNCERTAINTY_RANDOM_MIX_RATIO", 0.0)
+UNCERTAINTY_TEMPERATURE = WM_ACTIVE_LEARNING.get("UNCERTAINTY_TEMPERATURE", 0.8)
+UNCERTAINTY_USE_TOPK = WM_ACTIVE_LEARNING.get("UNCERTAINTY_USE_TOPK", False)
+UNCERTAINTY_N_SAMPLES = WM_ACTIVE_LEARNING.get("UNCERTAINTY_N_SAMPLES", 25)
+PROGRESS_RANDOM_MIX_RATIO = WM_ACTIVE_LEARNING.get("PROGRESS_RANDOM_MIX_RATIO", 0.0)
+SAVE_MODEL = "False"
 # Allow environment variable overrides
 if 'AL_STRATEGIES' in os.environ:
     STRATEGIES = os.environ['AL_STRATEGIES'].split(',')
@@ -90,7 +98,12 @@ def run_active_learning():
     grid_w = full_dataset.states.shape[2]
     inverse_model = SparseIDM(grid_h=grid_h, grid_w=grid_w, num_actions=7).to(DEVICE)
 
-    inverse_model.load_state_dict(torch.load(INVERSE_MODEL_PATH))
+    inverse_checkpoint = torch.load(INVERSE_MODEL_PATH, map_location=DEVICE)
+    if isinstance(inverse_checkpoint, dict) and "model_state_dict" in inverse_checkpoint:
+        inverse_state_dict = inverse_checkpoint["model_state_dict"]
+    else:
+        inverse_state_dict = inverse_checkpoint
+    inverse_model.load_state_dict(inverse_state_dict, strict=False)
     
     dataset_size = len(full_dataset)
     all_permuted_indices = torch.randperm(dataset_size).tolist()
@@ -117,7 +130,7 @@ def run_active_learning():
         model.eval()
         
         pretrained_video_gen = None
-        if strategy == "ASIM":
+        if strategy == "WAV":
             pretrained_video_gen = load_stage1_model(VIDEO_STAGE1_CKPT, obs_shape, num_actions=7)
             pretrained_video_gen.eval()
         
@@ -126,6 +139,9 @@ def run_active_learning():
         pseudo_label_bank = {}
         collected_real_data = []
         prev_losses_map = None
+        model_old = None
+        if strategy == "Progress" and NUM_ROUNDS >= 2:
+            model_old = copy.deepcopy(model).to(DEVICE)
 
         metrics = evaluate(
             model,
@@ -150,7 +166,7 @@ def run_active_learning():
         for round_idx in range(1, NUM_ROUNDS + 1):
             n_select = ADD_COUNT_FIRST_ROUND if round_idx == 1 else ADD_COUNT_PER_ROUND
             
-            if strategy == "ASIM":
+            if strategy == "WAV":
                 selected_idx, new_data_list = select_and_collect_consistency_data(
                     video_gen_model=pretrained_video_gen,
                     current_world_model=model,
@@ -163,7 +179,7 @@ def run_active_learning():
                     data_mode=CONSISTENCY_MODE, # "oracle", "model"
                     seed=SEED + round_idx,  
                     use_random_mix=False,
-                    random_mix_ratio=0.3,
+                    random_mix_ratio=0.1,
                 )
                 current_pool = list(set(current_pool) - set(selected_idx))
                 
@@ -196,8 +212,15 @@ def run_active_learning():
                     batch_size=BATCH_SIZE,
                     forward_carried_loss_weight=FORWARD_CARRIED_LOSS_WEIGHT,
                     compute_uncertainty_via_mcdropout_fn=compute_uncertainty_via_mcdropout,
+                    uncertainty_n_samples=UNCERTAINTY_N_SAMPLES,
+                    uncertainty_random_mix_ratio=UNCERTAINTY_RANDOM_MIX_RATIO,
+                    uncertainty_temperature=UNCERTAINTY_TEMPERATURE,
+                    uncertainty_use_topk=UNCERTAINTY_USE_TOPK,
+                    progress_random_mix_ratio=PROGRESS_RANDOM_MIX_RATIO,
+                    oracle_random_mix_ratio=ORACLE_RANDOM_MIX_RATIO,
                     round_idx=round_idx,
                     prev_losses_map=prev_losses_map,
+                    model_old=model_old,
                 )
                 pool_after = pool_before - len(selected_idx)
                 
@@ -234,6 +257,8 @@ def run_active_learning():
                 train_from_scratch=TRAIN_FROM_SCRATCH,
                 freeze_model_for_active_learning_fn=freeze_model_for_active_learning,
             )
+            if strategy == "Progress" and model_old is not None:
+                ema_gamma_progress_update_old(model_old, model, PROGRESS_GAMMA)
             
             metrics = evaluate(
                 model,
@@ -253,6 +278,26 @@ def run_active_learning():
                 'labeled': len(current_labeled),
                 'mse': metrics['mse'],
             })
+
+        # Save the final-round world model checkpoint for each strategy.
+        if SAVE_MODEL == "True":
+            final_round = NUM_ROUNDS
+            final_metrics = all_results[strategy][-1]
+            final_ckpt_path = os.path.join(
+                SAVE_DIR,
+                f"wm_{strategy}_final_round{final_round}.pth"
+            )
+            torch.save(
+                {
+                    "strategy": strategy,
+                    "seed": SEED,
+                    "final_round": final_round,
+                    "model_state_dict": model.state_dict(),
+                    "final_metrics": final_metrics,
+                },
+                final_ckpt_path,
+            )
+            print(f"Saved final checkpoint for {strategy} to: {final_ckpt_path}")
 
     print("\n============= All Strategies Summary =============")
     for strategy, results in all_results.items():

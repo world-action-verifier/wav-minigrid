@@ -1,35 +1,33 @@
 <div align="center">
 <h2><center>👉 World Action Verifier: Self-Improving World Models via Asymmetric Forward-Inverse Consistency </h2>
 
-[Yuejiang Liu](https://sites.google.com/view/yuejiangliu)<sup>1</sup>, 
-[Lingjing Kong](https://scholar.google.com/citations?hl=en&view_op=search_authors&mauthors=Lingjing+Kong+Carnegie+Mellon)<sup>2</sup>, 
-[Fan Feng](https://scholar.google.com/citations?hl=en&view_op=search_authors&mauthors=Fan+Feng+UC+San+Diego)<sup>3</sup>, 
-[Weifeng Lu](https://scholar.google.com/citations?hl=en&view_op=search_authors&mauthors=Weifeng+Lu+Shanghai+Jiao+Tong)<sup>4</sup>, 
-[Jinzhou Tang](https://scholar.google.com/citations?hl=en&view_op=search_authors&mauthors=Jinzhou+Tang+UC+San+Diego)<sup>3</sup>,  
-[XiangCheng Zhang](https://scholar.google.com/citations?hl=en&view_op=search_authors&mauthors=XiangCheng+Zhang+Tsinghua)<sup>5</sup>, 
-[Kun Zhang](https://scholar.google.com/citations?hl=en&view_op=search_authors&mauthors=Kun+Zhang+Carnegie+Mellon)<sup>2</sup>, 
-[Kevin Patrick Murphy](https://www.cs.ubc.ca/~murphyk/)<sup>6</sup>, 
-[Yilun Du](https://yilundu.github.io/)<sup>7</sup>, 
-[Chelsea Finn](https://ai.stanford.edu/~cbfinn/)<sup>1</sup>
+[Yuejiang Liu](https://sites.google.com/view/yuejiangliu)<sup>&dagger;,*</sup>, 
+[Fan Feng](https://profiles.ucsd.edu/fan.feng)<sup>&Dagger;,*</sup>, 
+[Lingjing Kong](https://lingjing-kong.github.io/)<sup>&sect;,*</sup>, 
+[Weifeng Lu](https://world-action-verifier.github.io/)
+[Jinzhou Tang](https://world-action-verifier.github.io/)<sup>&Dagger;</sup>,  
+[Kun Zhang](https://www.andrew.cmu.edu/user/kunz1/index.html)<sup>&sect;</sup>, 
+[Kevin Patrick Murphy](https://www.cs.ubc.ca/~murphyk/)<sup>&para;</sup>, 
+[Chelsea Finn](https://ai.stanford.edu/~cbfinn/)<sup>&dagger;</sup>, 
+[Yilun Du](https://yilundu.github.io/)<sup>||</sup>
 
 <br>
 
-<sup>1</sup> Stanford University &nbsp;&nbsp;
-<sup>2</sup> Carnegie Mellon University &nbsp;&nbsp;
-<sup>3</sup> University of California, San Diego &nbsp;&nbsp;
+<sup>&dagger;</sup> Stanford University &nbsp;&nbsp;
+<sup>&Dagger;</sup> University of California, San Diego &nbsp;&nbsp;
+<sup>&sect;</sup> Carnegie Mellon University &nbsp;&nbsp;
 <br>
-<sup>4</sup> School of AI, Shanghai Jiao Tong University  
-<sup>5</sup> Tsinghua University &nbsp;&nbsp;
-<sup>6</sup> Google DeepMind &nbsp;&nbsp;
-<sup>7</sup> Harvard University
+<sup>&para;</sup> Google DeepMind &nbsp;&nbsp;
+<sup>||</sup> Harvard University &nbsp;&nbsp;
+<sup>*</sup> Equal contribution
 
 
-<a href='https://arxiv.org/abs/2510.10125'><img src='https://img.shields.io/badge/ArXiv-2510.10125-red'></a> 
-<a href='https://ctrl-world.github.io/'><img src='https://img.shields.io/badge/Project-Page-Blue'></a> 
+<a href='https://arxiv.org/abs/2604.01985'><img src='https://img.shields.io/badge/ArXiv-2510.10125-red'></a> 
+<a href='https://world-action-verifier.github.io/'><img src='https://img.shields.io/badge/Project-Page-Blue'></a> 
 
 </div>
 
-This repository contains the official PyTorch implementation of [**WAV**](https://sites.google.com/view/ctrl-world).
+This repository contains the official PyTorch implementation of [**WAV**](https://world-action-verifier.github.io/).
 
 This codebase focuses on the controlled setting experiments in MiniGrid, 
 which are designed to provide mechanistic insights and validate the core 
@@ -209,7 +207,10 @@ python exps/wm_active_learning.py
 Running the experiments should yield results consistent with the figures below, demonstrating WAV's superior performance across metrics:
 
 <p>
-    <img src="assets/minigrid_all_results.png" alt="MiniGrid Experimental Results" width="100%" />
+    <img src="assets/minigrid_results_fig3.png" alt="MiniGrid Experimental Results" width="100%" />
+</p>
+<p>
+    <img src="assets/minigrid_results_fig4.png" alt="MiniGrid Experimental Results" width="100%" />
 </p>
 
 Key Findings:
@@ -252,10 +253,13 @@ This codebase is built upon [MiniGrid](https://github.com/Farama-Foundation/Mini
 ## Bibtex 
 If you find our work helpful, please leave us a star and cite our paper. Thank you!
 ```
-@article{liu2026selfimproving,
-  title={Self-Improving World Models via Asymmetric Forward-Inverse Consistency},
-  author={Liu, Yuejiang and Kong, Lingjing and Feng, Fan and Lu, Weifeng and Tang, Jinzhou and Zhang, XiangCheng and Zhang, Kun and Murphy, Kevin Patrick and Du, Yilun and Finn, Chelsea},
-  journal={arXiv preprint arXiv:2602.XXXXX},
-  year={2026}
+@article{liu2026wav, 
+      title={World Action Verifier: Self-Improving World Models via Forward-Inverse Asymmetry}, 
+      author={Yuejiang Liu and Fan Feng and Lingjing Kong and Weifeng Lu and Jinzhou Tang and Kun Zhang and Kevin Murphy and Chelsea Finn and Yilun Du}, 
+      year={2026}, 
+      eprint={2604.01985}, 
+      archivePrefix={arXiv}, 
+      primaryClass={cs.LG}, 
+      url={https://arxiv.org/abs/2604.01985}, 
 }
 ```

@@ -212,6 +212,14 @@ def compute_uncertainty_via_mcdropout(model, dataset, pool_indices, batch_size, 
 
     return np.array(uncertainties)
 
+def ema_gamma_progress_update_old(model_old: nn.Module, model_new: nn.Module, gamma: float) -> None:
+    """θ_old ← γ θ_old + (1 − γ) θ_new (γ-Progress, same device)."""
+    if not (0.0 < float(gamma) < 1.0):
+        raise ValueError(f"gamma must be in (0, 1), got {gamma!r}")
+    with torch.no_grad():
+        for p_old, p_new in zip(model_old.parameters(), model_new.parameters()):
+            p_old.data.mul_(gamma).add_(p_new.data, alpha=(1.0 - gamma))
+
 def query_strategy(
     strategy_name: str,
     model,
@@ -225,8 +233,14 @@ def query_strategy(
     forward_carried_loss_weight: float,
     compute_uncertainty_via_mcdropout_fn,
     uncertainty_n_samples: int = 25,
+    uncertainty_random_mix_ratio: float = 0.0,
+    uncertainty_temperature: float = 0.8,
+    uncertainty_use_topk: bool = False,
+    progress_random_mix_ratio: float = 0.0,
+    oracle_random_mix_ratio: float = 0.0,
     round_idx: int = None,
     prev_losses_map: Dict[int, float] = None,
+    model_old=None,
 ) -> Tuple[List[int], Dict, Dict]:
     """Select indices from pool based on a strategy.
     
@@ -254,41 +268,81 @@ def query_strategy(
         )
         loss_with_indices = [(float(losses[i]), pool_indices[i]) for i in range(len(pool_indices))]
 
+        rng_oracle = np.random.RandomState(
+            int(seed)
+            + 1337
+            + (7919 * int(round_idx)) if round_idx is not None else (1337 + int(seed))
+        )
+
+        mix_ratio = float(np.clip(oracle_random_mix_ratio, 0.0, 1.0))
+        n_rand = int(round(n_select * mix_ratio))
+        n_rand = max(0, min(n_select, n_rand))
+        n_oracle = n_select - n_rand
+
+        selected_rand: List[int] = []
+        remaining_loss_with_indices = loss_with_indices
+        if n_rand > 0:
+            rand_local = rng_oracle.choice(len(pool_indices), size=n_rand, replace=False)
+            selected_rand = [pool_indices[i] for i in rand_local]
+            selected_set = set(selected_rand)
+            remaining_loss_with_indices = [(loss, idx) for (loss, idx) in loss_with_indices if idx not in selected_set]
+
+        if n_oracle <= 0:
+            return selected_rand, {}, {}
+
+        if len(remaining_loss_with_indices) < n_oracle:
+            raise ValueError(
+                f"Pool too small after Oracle random mix: need {n_oracle} oracle picks, "
+                f"only {len(remaining_loss_with_indices)} left."
+            )
+
+        remaining_loss_with_indices.sort(key=lambda x: (x[0], x[1]))
+
         if strategy_name == "Hard-Oracle":
-            loss_with_indices.sort(key=lambda x: (-x[0], x[1]))
-            return [idx for _, idx in loss_with_indices[:n_select]], {}, {}
+            remaining_loss_with_indices.sort(key=lambda x: (-x[0], x[1]))
+            selected_oracle = [idx for _, idx in remaining_loss_with_indices[:n_oracle]]
+            selected = selected_rand + selected_oracle
+            return selected[:n_select], {}, {}
 
         if strategy_name == "Simple-Oracle":
-            loss_with_indices.sort(key=lambda x: (x[0], x[1]))
-            return [idx for _, idx in loss_with_indices[:n_select]], {}, {}
+            # already sorted ascending by (loss, idx)
+            selected_oracle = [idx for _, idx in remaining_loss_with_indices[:n_oracle]]
+            selected = selected_rand + selected_oracle
+            return selected[:n_select], {}, {}
 
-        # Uniform-Oracle: sample across bins of sorted losses.
-        loss_with_indices.sort(key=lambda x: (x[0], x[1]))
-        n_bins = min(10, len(loss_with_indices))
-        bin_size = max(1, len(loss_with_indices) // n_bins)
-        samples_per_bin = n_select // n_bins
-        remainder = n_select % n_bins
+        # Uniform-Oracle: sample across bins of sorted losses (ascending).
+        n_bins = min(10, len(remaining_loss_with_indices))
+        bin_size = max(1, len(remaining_loss_with_indices) // n_bins)
+        samples_per_bin = n_oracle // n_bins
+        remainder = n_oracle % n_bins
 
-        selected: List[int] = []
+        selected_oracle: List[int] = []
         for bin_idx in range(n_bins):
             start = bin_idx * bin_size
-            end = start + bin_size if bin_idx < n_bins - 1 else len(loss_with_indices)
-            bin_data = loss_with_indices[start:end]
+            end = start + bin_size if bin_idx < n_bins - 1 else len(remaining_loss_with_indices)
+            bin_data = remaining_loss_with_indices[start:end]
             k = samples_per_bin + (1 if bin_idx < remainder else 0)
             k = min(k, len(bin_data))
             if k <= 0:
                 continue
             step = max(1, len(bin_data) // k)
             for j in range(0, len(bin_data), step):
-                if len(selected) >= n_select:
+                if len(selected_oracle) >= n_oracle:
                     break
-                selected.append(bin_data[j][1])
-        if len(selected) < n_select:
-            selected_set = set(selected)
-            remaining = [idx for _, idx in loss_with_indices if idx not in selected_set]
-            if remaining:
-                fill = np.random.choice(remaining, size=min(n_select - len(selected), len(remaining)), replace=False).tolist()
-                selected.extend(fill)
+                selected_oracle.append(bin_data[j][1])
+
+        if len(selected_oracle) < n_oracle:
+            selected_set = set(selected_oracle)
+            remaining_indices = [idx for _, idx in remaining_loss_with_indices if idx not in selected_set]
+            if remaining_indices:
+                fill = rng_oracle.choice(
+                    remaining_indices,
+                    size=min(n_oracle - len(selected_oracle), len(remaining_indices)),
+                    replace=False,
+                ).tolist()
+                selected_oracle.extend(fill)
+
+        selected = selected_rand + selected_oracle
         return selected[:n_select], {}, {}
 
     if strategy_name == "Uncertainty":
@@ -301,21 +355,55 @@ def query_strategy(
             n_samples=uncertainty_n_samples,
             compute_uncertainty_via_mcdropout_fn=compute_uncertainty_via_mcdropout_fn,
         )
-        u_min = float(np.min(uncertainties))
-        u_max = float(np.max(uncertainties))
-        if u_max - u_min > 1e-6:
-            u_norm = (uncertainties - u_min) / (u_max - u_min)
-        else:
-            u_norm = np.zeros_like(uncertainties)
+        rng = np.random.RandomState(
+            int(seed) + (7919 * int(round_idx)) if round_idx is not None else int(seed)
+        )
+        mix_ratio = float(np.clip(uncertainty_random_mix_ratio, 0.0, 1.0))
+        n_rand = int(round(n_select * mix_ratio))
+        n_rand = max(0, min(n_select, n_rand))
+        n_unc = n_select - n_rand
 
-        temperature = 0.8
-        weights = np.exp(u_norm / temperature)
-        probs = weights / np.sum(weights)
-        selected_local = np.random.choice(len(pool_indices), size=n_select, replace=False, p=probs)
-        return [pool_indices[i] for i in selected_local], {}, {}
+        selected: List[int] = []
+        remaining_local = list(range(len(pool_indices)))
+
+        if n_rand > 0:
+            rand_local = rng.choice(len(pool_indices), size=n_rand, replace=False)
+            selected.extend(pool_indices[i] for i in rand_local)
+            picked = set(rand_local.tolist())
+            remaining_local = [i for i in remaining_local if i not in picked]
+
+        if n_unc <= 0:
+            return selected, {}, {}
+
+        if len(remaining_local) < n_unc:
+            raise ValueError(
+                f"Pool too small after random mix: need {n_unc} uncertainty picks, "
+                f"only {len(remaining_local)} left."
+            )
+
+        u_rem = uncertainties[remaining_local]
+        u_min = float(np.min(u_rem))
+        u_max = float(np.max(u_rem))
+        if u_max - u_min > 1e-6:
+            u_norm = (u_rem - u_min) / (u_max - u_min)
+        else:
+            u_norm = np.zeros_like(u_rem)
+
+        temp = max(float(uncertainty_temperature), 1e-6)
+        if uncertainty_use_topk:
+            order = np.argsort(-u_norm)
+            pick_local = [remaining_local[i] for i in order[:n_unc]]
+            selected.extend(pool_indices[i] for i in pick_local)
+        else:
+            weights = np.exp(u_norm / temp)
+            probs = weights / np.sum(weights)
+            pick_pos = rng.choice(len(remaining_local), size=n_unc, replace=False, p=probs)
+            selected.extend(pool_indices[remaining_local[i]] for i in pick_pos)
+
+        return selected, {}, {}
     
     if strategy_name == "Progress":
-        losses = compute_loss_for_pool(
+        losses_curr = compute_loss_for_pool(
             model=model,
             dataset=dataset,
             pool_indices=pool_indices,
@@ -323,25 +411,59 @@ def query_strategy(
             device=device,
             forward_carried_loss_weight=forward_carried_loss_weight,
         )
-        
-        current_loss_map = {idx: float(losses[i]) for i, idx in enumerate(pool_indices)}
+        current_loss_map = {idx: float(losses_curr[i]) for i, idx in enumerate(pool_indices)}
 
-        if round_idx == 1 or prev_losses_map is None:
-            scores = losses
+        # γ-Progress: for round>=2, score by loss(model_old) - loss(model).
+        # Fallback to "loss-based" (oracle-like) in round 1 or when model_old is unavailable.
+        if round_idx is not None and round_idx >= 2 and model_old is not None:
+            losses_old = compute_loss_for_pool(
+                model=model_old,
+                dataset=dataset,
+                pool_indices=pool_indices,
+                batch_size=batch_size,
+                device=device,
+                forward_carried_loss_weight=forward_carried_loss_weight,
+            )
+            scores = losses_old - losses_curr
+        elif prev_losses_map is not None and round_idx is not None and round_idx >= 2:
+            # Backward-compat: allow old delta-last-round definition if caller still provides prev_losses_map.
+            scores = np.asarray(
+                [float(prev_losses_map.get(idx, float(losses_curr[i]))) - float(losses_curr[i]) for i, idx in enumerate(pool_indices)],
+                dtype=np.float32,
+            )
         else:
-            scores = []
-            for i, idx in enumerate(pool_indices):
-                loss_curr = float(losses[i])
-                loss_prev = prev_losses_map.get(idx, loss_curr)
-                progress = loss_prev - loss_curr
-                scores.append(progress)
-            scores = np.array(scores)
+            scores = losses_curr
 
-        score_with_indices = [(float(scores[i]), pool_indices[i]) for i in range(len(scores))]
+        rng_prog = np.random.RandomState(
+            int(seed) + 4243 + (7919 * int(round_idx)) if round_idx is not None else int(seed) + 4243
+        )
+        mix_ratio = float(np.clip(progress_random_mix_ratio, 0.0, 1.0))
+        n_rand = int(round(n_select * mix_ratio))
+        n_rand = max(0, min(n_select, n_rand))
+        n_prog = n_select - n_rand
+
+        selected_prog: List[int] = []
+        remaining_local = list(range(len(pool_indices)))
+
+        if n_rand > 0:
+            rand_local = rng_prog.choice(len(pool_indices), size=n_rand, replace=False)
+            selected_prog.extend(pool_indices[i] for i in rand_local)
+            picked = set(rand_local.tolist())
+            remaining_local = [i for i in remaining_local if i not in picked]
+
+        if n_prog <= 0:
+            return selected_prog, {}, current_loss_map
+
+        if len(remaining_local) < n_prog:
+            raise ValueError(
+                f"Pool too small after Progress random mix: need {n_prog} progress picks, "
+                f"only {len(remaining_local)} left."
+            )
+
+        score_with_indices = [(float(scores[i]), pool_indices[i]) for i in remaining_local]
         score_with_indices.sort(key=lambda x: (-x[0], x[1]))
-        
-        selected_indices = [idx for _, idx in score_with_indices[:n_select]]
-        return selected_indices, {}, current_loss_map
+        selected_prog.extend(idx for _, idx in score_with_indices[:n_prog])
+        return selected_prog, {}, current_loss_map
     
     raise ValueError(f"Unknown strategy: {strategy_name}")
 
@@ -407,7 +529,7 @@ def select_and_collect_consistency_data(
 
     with torch.no_grad():
         base = 0
-        for batch in tqdm(loader, desc="Scoring Candidates"):
+        for batch in loader:
             bsz = batch['frame'].shape[0]
             batch_indices = [pool_indices[base + i] for i in range(bsz)]
             base += bsz
