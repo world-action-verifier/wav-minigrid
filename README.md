@@ -1,6 +1,6 @@
 <div align="center">
 <h2 align="center">
-  👉 World Action Verifier <br> 
+  World Action Verifier <br> 
   Self-Improving World Models via Forward-Inverse Asymmetry
 </h2>
 
@@ -35,8 +35,6 @@ This repository contains the official PyTorch implementation of [**WAV**](https:
 This codebase focuses on the controlled setting experiments in MiniGrid, 
 which are designed to provide mechanistic insights and validate the core 
 ideas behind WAV under well-controlled environments.
-
-**TL;DR:** WAV improves world models by turning hard prediction into easier verification via forward–inverse consistency, achieving better performance with half the data.
 
 <p>
     <img src="assets/teaser.png" alt="WAV framework" width="100%" />
