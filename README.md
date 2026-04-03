@@ -1,5 +1,8 @@
 <div align="center">
-<h2><center>👉 World Action Verifier: Self-Improving World Models via Forward-Inverse Asymmetry </h2>
+<h2 align="center">
+  👉 World Action Verifier <br> 
+  Self-Improving World Models via Forward-Inverse Asymmetry
+</h2>
 
 [Yuejiang Liu](https://sites.google.com/view/yuejiangliu)<sup>&dagger;,\*</sup>, 
 [Fan Feng](https://profiles.ucsd.edu/fan.feng)<sup>&Dagger;,\*</sup>, 
