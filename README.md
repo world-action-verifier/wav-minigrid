@@ -7,7 +7,7 @@
 [Yuejiang Liu](https://sites.google.com/view/yuejiangliu)<sup>&dagger;,\*</sup>, 
 [Fan Feng](https://profiles.ucsd.edu/fan.feng)<sup>&Dagger;,\*</sup>, 
 [Lingjing Kong](https://lingjing-kong.github.io/)<sup>&sect;,\*</sup>, 
-[Weifeng Lu](https://world-action-verifier.github.io/)
+[Weifeng Lu](https://world-action-verifier.github.io/),
 [Jinzhou Tang](https://world-action-verifier.github.io/)<sup>&Dagger;</sup>,  
 [Kun Zhang](https://www.andrew.cmu.edu/user/kunz1/index.html)<sup>&sect;</sup>, 
 [Kevin Murphy](https://www.cs.ubc.ca/~murphyk/)<sup>&para;</sup>, 
