@@ -122,7 +122,8 @@ class MiniGridPhysicsOracle:
                 self.OBJECT_TO_IDX['wall'], 
                 self.OBJECT_TO_IDX['door']
             ]
-            has_carry = next_c_obj != self.OBJECT_TO_IDX['empty']
+            # has_carry = next_c_obj != self.OBJECT_TO_IDX['empty']
+            has_carry = True # The agent can swap with nothing
             
             if front_pickable and has_carry:
                 obj_to_grid = next_c_obj

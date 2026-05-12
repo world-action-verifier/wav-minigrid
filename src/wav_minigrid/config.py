@@ -196,7 +196,8 @@ WM_ACTIVE_LEARNING = {
     "STAGE1_CKPT": os.path.join(
         MINIGRID_DIR, 
         "checkpoints", 
-        "pretrained_base_world_model.pth" # initialized from the Pre-trained Video Model; trained from the random selected data
+        # "pretrained_base_world_model.pth" # initialized from the Pre-trained Video Model; trained from the random selected data
+        "pretrained_video_model.pth" # initialized from the Pre-trained Video Model; trained from the random selected data
     ),
     "INVERSE_MODEL_PATH": os.path.join(
         MINIGRID_DIR, 
@@ -238,4 +239,29 @@ WM_ACTIVE_LEARNING = {
     "TRAIN_FROM_SCRATCH": False,
     "SEED": 48,
 }
+
+# ============================================================================
+# World Model Action Following Score (AFS) evaluation (exps/afs_test.py)
+# ============================================================================
+WM_AFS_EVAL = {
+    "CHECKPOINT_DIR": os.path.join(
+        MINIGRID_DIR, "checkpoints", "afs_test_checkpoints"
+    ),
+    "CHECKPOINT_PATTERN": (
+        r"wm_(WAV|Progress|Hard-Oracle|Random|Uncertainty)_afs_test\.pth"
+    ),
+    "TEST_SET_PATH": os.path.join(
+        MINIGRID_DIR,
+        "data",
+        "MiniGrid-Empty-Interact-6x6-o3-test-v0_MultiTaskPolicy_policy_OOD_test_set.npz",
+    ),
+    "NUM_SAMPLES": 200,
+    "SEED": 49,
+    "OUTPUT_JSON": "wm_afs_results.json",
+    "ACTION_MODE": "fixed_interact",
+    "ACTIONS": "3,5,6",
+    "REQUIRED_EXECUTABLE_ACTIONS": "3,5,6",
+    "ACTION_FOLLOWING_TOL": 0.0,
+}
+
 

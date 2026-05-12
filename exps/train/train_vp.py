@@ -25,6 +25,7 @@ from config import DEVICE, VIDEO_TRAINING
 print(f"Using device: {DEVICE}")
 
 DATA_PATH = VIDEO_TRAINING["DATA_PATH"]
+DEFAULT_DATA_PATHS = VIDEO_TRAINING.get("DATA_PATHS", [DATA_PATH])
 FORWARD_CARRIED_LOSS_WEIGHT = VIDEO_TRAINING["FORWARD_CARRIED_LOSS_WEIGHT"]
 PRIOR_WEIGHT = VIDEO_TRAINING["PRIOR_WEIGHT"]
 VQ_LOSS_WEIGHT = VIDEO_TRAINING["VQ_LOSS_WEIGHT"]
@@ -32,11 +33,19 @@ AUX_ACTION_WEIGHT = VIDEO_TRAINING["AUX_ACTION_WEIGHT"]
 CONSISTENCY_WEIGHT = VIDEO_TRAINING["CONSISTENCY_WEIGHT"]
 
 def train_stage1(args):
+    if getattr(args, "data_paths", None):
+        data_paths = args.data_paths
+    elif getattr(args, "data_path", None):
+        data_paths = [args.data_path]
+    else:
+        data_paths = DEFAULT_DATA_PATHS
+    print(f"Training data file(s): {data_paths}")
+
     train_loader, test_loader, obs_shape = get_dataloaders(
-        args.data_path, 
-        batch_size=args.batch_size, 
+        data_paths,
+        batch_size=args.batch_size,
         split_ratio=0.5,
-        seed=42
+        seed=42,
     )
     os.makedirs(args.save_dir, exist_ok=True)
     
@@ -148,7 +157,24 @@ def train_stage1(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path", type=str, default=DATA_PATH, help="Path to .npz data file")
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        default=None,
+        help="Single .npz path (overrides default merged DATA_PATHS if set without --data_paths)",
+    )
+    parser.add_argument(
+        "--data_paths",
+        nargs="+",
+        default=None,
+        help="One or more .npz paths to merge (same格式 as MiniGridDynamicsDataset).默认见 config.VIDEO_TRAINING['DATA_PATHS']",
+    )
+    parser.add_argument(
+        "--pretrained_path",
+        type=str,
+        default=None,
+        help="Optional checkpoint to initialize weights before stage-1 training",
+    )
     parser.add_argument("--save_dir", type=str, default="checkpoints_stage1", help="Directory to save models/logs")
     parser.add_argument("--epochs", type=int, default=250)
     parser.add_argument("--batch_size", type=int, default=64)

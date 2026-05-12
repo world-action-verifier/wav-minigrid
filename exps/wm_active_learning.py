@@ -311,4 +311,3 @@ def run_active_learning():
 
 if __name__ == "__main__":
     run_active_learning()
-

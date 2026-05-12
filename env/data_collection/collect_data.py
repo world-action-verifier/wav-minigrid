@@ -57,7 +57,8 @@ def _get_interact_allowed_actions(env: Environment):
     if front_toggleable:
         allowed.append(int(MiniGridEnv.Actions.toggle))
 
-    if front_pickable and has_carry:
+    # if front_pickable and has_carry:
+    if front_pickable:
         allowed.append(int(MiniGridEnv.Actions.done))
 
     seen = set()

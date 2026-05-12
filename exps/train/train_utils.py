@@ -4,7 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from wav_minigrid.dataset import MiniGridDynamicsDataset, NormalizedDataset
+from wav_minigrid.dataset import MiniGridDynamicsDataset, MergedMiniGridDataset, NormalizedDataset
+from wav_minigrid.models import SparseIDM
 from torch.utils.data import DataLoader, Subset, Dataset
 
 def compute_loss_vp(pred_out, inputs, criterion_ce_none, criterion_mse,
@@ -140,11 +141,23 @@ def evaluate(
     avg_loss = total_loss / max(1, total_samples)
     return {"mse": float(avg_loss)}
 
-def get_dataloaders(data_path, batch_size, split_ratio=0.5, seed=42):
-    if not os.path.exists(data_path):
-        raise FileNotFoundError(f"Data file not found at {data_path}")
+def get_dataloaders(data_paths, batch_size, split_ratio=0.5, seed=42):
+    """Build train/test loaders from one or more MiniGrid .npz paths (merged if multiple)."""
+    if isinstance(data_paths, str):
+        paths = [data_paths]
+    else:
+        paths = list(data_paths)
+    if not paths:
+        raise ValueError("data_paths must be a non-empty list or a single path string")
 
-    full_dataset = MiniGridDynamicsDataset(data_path)
+    for data_path in paths:
+        if not os.path.exists(data_path):
+            raise FileNotFoundError(f"Data file not found at {data_path}")
+
+    if len(paths) == 1:
+        full_dataset = MiniGridDynamicsDataset(paths[0])
+    else:
+        full_dataset = MergedMiniGridDataset([MiniGridDynamicsDataset(p) for p in paths])
     dataset_size = len(full_dataset)
     
     
@@ -277,7 +290,11 @@ def evaluate_idm(model, dataloader, device, num_actions=7, verbose=False):
         for batch in dataloader:
             inputs, actions = prepare_batch_inputs(batch, device)
             
-            logits = model(inputs)
+            outputs = model(inputs)
+            if isinstance(model, SparseIDM):
+                logits, _, _ = outputs
+            else:
+                logits = outputs
             pred = torch.argmax(logits, dim=1)
             
             correct_batch = (pred == actions)

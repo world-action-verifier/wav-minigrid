@@ -730,7 +730,8 @@ def train_one_round(
     """Fine-tune world model for one active-learning round."""
     if not train_from_scratch:
         freeze_model_for_active_learning_fn(model)
-
+    else:
+        print("Training from scratch")
     trainable_params = list(filter(lambda p: p.requires_grad, model.parameters()))
     optimizer = optim.Adam(trainable_params, lr=lr)
 

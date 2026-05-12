@@ -5,7 +5,7 @@ This script trains a SparseIDM model on the base dataset.
 """
 
 import torch
-import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import os
@@ -50,10 +50,20 @@ def train_idm(args):
         seed=SEED
     )
     
+    sample_batch = next(iter(train_loader))
+    frame_sample = sample_batch["frame"]
+    grid_h, grid_w = frame_sample.shape[2], frame_sample.shape[3]
+    num_batches = len(train_loader)
+    total_steps = EPOCHS_FIRST_ROUND * num_batches if num_batches > 0 else 1
+    
+    # Match idm_comparison.py: SparseIDM with grid size + CE + sparsity warmup loss
+    sparse_target_cells = 2.0
+    sparse_lambda_max = 0.1
+    
     # Initialize model
     print(f"\n=== Initializing SparseIDM ===")
-    model = SparseIDM(num_actions=NUM_ACTIONS).to(DEVICE)
-    print(f"Model initialized with {NUM_ACTIONS} actions")
+    model = SparseIDM(grid_h=grid_h, grid_w=grid_w, num_actions=NUM_ACTIONS).to(DEVICE)
+    print(f"Model initialized with grid {grid_h}x{grid_w}, {NUM_ACTIONS} actions")
     
     # Evaluate initial model (random weights)
     print("\n=== Initial Evaluation ===")
@@ -62,7 +72,6 @@ def train_idm(args):
     
     # Training setup
     optimizer = optim.Adam(model.parameters(), lr=LR)
-    criterion = nn.CrossEntropyLoss()
     
     best_val_acc = 0.0
     best_epoch = 0
@@ -74,17 +83,26 @@ def train_idm(args):
         epoch_correct = 0
         epoch_total = 0
         
-        for batch in train_loader:
+        for batch_idx, batch in enumerate(train_loader):
             inputs, actions = prepare_batch_inputs(batch, DEVICE)
             
             optimizer.zero_grad()
-            logits = model(inputs)
-            loss = criterion(logits, actions)
+            action_logits, mask, _ = model(inputs)
+            
+            ce_loss = F.cross_entropy(action_logits, actions)
+            cells_selected = mask.sum(dim=(1, 2, 3))
+            sparsity_loss = torch.mean(torch.abs(cells_selected - sparse_target_cells))
+            current_step = epoch * num_batches + batch_idx
+            warmup_lambda = sparse_lambda_max * min(
+                float(current_step) / max(total_steps - 1, 1), 1.0
+            )
+            loss = ce_loss + warmup_lambda * sparsity_loss
+            
             loss.backward()
             optimizer.step()
             
             epoch_loss += loss.item()
-            pred = torch.argmax(logits, dim=1)
+            pred = torch.argmax(action_logits, dim=1)
             epoch_correct += (pred == actions).sum().item()
             epoch_total += actions.size(0)
         
@@ -150,7 +168,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--train_ratio",
         type=float,
-        default=0.8,
+        default=0.9,
         help="Ratio of data to use for training (rest for validation)"
     )
     parser.add_argument(

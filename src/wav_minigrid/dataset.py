@@ -142,3 +142,103 @@ class NormalizedDataset(Dataset):
             sample['carried_obj'] = carried_obj
         
         return sample
+
+class MergedMiniGridDataset(Dataset):
+    """
+    Merge multiple MiniGrid-style datasets into a single unified dataset.
+    Compatible with:
+        - MiniGridDynamicsDataset
+        - MemoryDynamicsDataset
+    """
+
+    def __init__(self, datasets):
+        all_states = []
+        all_next_states = []
+        all_actions = []
+        all_carried = []
+        all_next_carried = []
+
+        for ds in datasets:
+
+            # Case 1:
+            # MiniGridDynamicsDataset-like object
+            if hasattr(ds, 'states'):
+
+                all_states.append(ds.states)
+                all_next_states.append(ds.next_states)
+                all_actions.append(ds.actions)
+                all_carried.append(ds.carried)
+                all_next_carried.append(ds.next_carried)
+
+            # Case 2:
+            # MemoryDynamicsDataset-like object
+            else:
+
+                states = []
+                next_states = []
+                actions = []
+                carried = []
+                next_carried = []
+
+                for i in range(len(ds)):
+                    item = ds.data[i]
+
+                    states.append(
+                        torch.tensor(item['state']).float()
+                    )
+
+                    next_states.append(
+                        torch.tensor(item['next_state']).float()
+                    )
+
+                    actions.append(
+                        torch.tensor(item['action']).long()
+                    )
+
+                    carried.append(
+                        torch.tensor(item['carried']).long()
+                    )
+
+                    next_carried.append(
+                        torch.tensor(item['next_carried']).long()
+                    )
+
+                all_states.append(torch.stack(states))
+                all_next_states.append(torch.stack(next_states))
+                all_actions.append(torch.stack(actions))
+                all_carried.append(torch.stack(carried))
+                all_next_carried.append(torch.stack(next_carried))
+
+        # Merge everything
+        self.states = torch.cat(all_states, dim=0)
+        self.next_states = torch.cat(all_next_states, dim=0)
+        self.actions = torch.cat(all_actions, dim=0)
+        self.carried = torch.cat(all_carried, dim=0)
+        self.next_carried = torch.cat(all_next_carried, dim=0)
+
+    def __len__(self):
+        return len(self.states)
+
+    def __getitem__(self, idx):
+
+        frames_seq = torch.stack([
+            self.states[idx],
+            self.next_states[idx]
+        ], dim=0)
+
+        carried_col_seq = torch.stack([
+            self.carried[idx, 0],
+            self.next_carried[idx, 0]
+        ], dim=0).unsqueeze(1)
+
+        carried_obj_seq = torch.stack([
+            self.carried[idx, 1],
+            self.next_carried[idx, 1]
+        ], dim=0).unsqueeze(1)
+
+        return {
+            'frame': frames_seq,
+            'carried_col': carried_col_seq,
+            'carried_obj': carried_obj_seq,
+            'action': self.actions[idx]
+        }
