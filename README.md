@@ -190,7 +190,7 @@ Running the experiments should yield results consistent with the figures below, 
     <img src="assets/minigrid_results_fig3.png" alt="MiniGrid Experimental Results" width="100%" />
 </p>
 <p>
-    <img src="assets/minigrid_results_fig4.png" alt="MiniGrid Experimental Results" width="100%" />
+    <img src="assets/fig4.png" alt="MiniGrid Experimental Results" width="100%" />
 </p>
 
 Key Findings:
@@ -199,6 +199,7 @@ Key Findings:
 * **Complexity Scaling**: Sparse IDM demonstrate stable performance as environment complexity increases
 * **Noise Robustness**: Sparse IDM remains robust under increasing environmental noise
 * **Active Learning**: WAV's acquisition strategy leads to more efficient data utilization
+* **Active Following**: WAV consistently achieves higher action following scores 
 
 ## 📂 Project Structure
 
